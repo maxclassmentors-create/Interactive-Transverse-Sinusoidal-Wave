@@ -19,8 +19,8 @@ st.set_page_config(
 st.title("〰️ Interactive Transverse Sinusoidal Wave")
 
 st.write(
-    "Use the sliders to change the amplitude and frequency "
-    "of the transverse wave."
+    "Adjust the amplitude and frequency sliders, "
+    "then press Play to continuously animate the wave."
 )
 
 # --------------------------------------------------
@@ -51,20 +51,22 @@ frequency = st.sidebar.slider(
 
 wavelength = 400
 
-# x positions
 x = np.linspace(0, 1200, 600)
 
-# Center/equilibrium position
-center_y = 0
+num_frames = 120
 
-# Number of animation frames
-num_frames = 100
+# One complete animation cycle
+animation_period = 1 / frequency
 
-# Time values
-times = np.linspace(0, 4, num_frames)
+times = np.linspace(
+    0,
+    animation_period,
+    num_frames,
+    endpoint=False
+)
 
 # --------------------------------------------------
-# Create Initial Wave
+# Initial Wave
 # --------------------------------------------------
 
 y = amplitude * np.sin(
@@ -72,12 +74,12 @@ y = amplitude * np.sin(
 )
 
 # --------------------------------------------------
-# Create Plotly Figure
+# Create Figure
 # --------------------------------------------------
 
 fig = go.Figure()
 
-# Initial wave
+# Wave
 fig.add_trace(
     go.Scatter(
         x=x,
@@ -105,7 +107,7 @@ fig.add_trace(
 )
 
 # --------------------------------------------------
-# Create Animation Frames
+# Animation Frames
 # --------------------------------------------------
 
 frames = []
@@ -117,66 +119,83 @@ for t in times:
         - 2 * np.pi * frequency * t
     )
 
-    frame = go.Frame(
-        data=[
-            go.Scatter(
-                x=x,
-                y=y_frame,
-                mode="lines",
-                line=dict(
-                    width=4
+    frames.append(
+        go.Frame(
+            data=[
+                go.Scatter(
+                    x=x,
+                    y=y_frame,
+                    mode="lines",
+                    line=dict(
+                        width=4
+                    )
                 )
-            )
-        ],
-        name=f"{t:.2f}"
+            ],
+            name=str(t)
+        )
     )
-
-    frames.append(frame)
 
 fig.frames = frames
 
 # --------------------------------------------------
-# Animation Controls
+# Animation Buttons
 # --------------------------------------------------
 
 fig.update_layout(
     updatemenus=[
         {
             "type": "buttons",
+            "direction": "left",
             "showactive": False,
+
             "x": 0.5,
             "y": -0.15,
+
             "xanchor": "center",
             "yanchor": "top",
+
             "buttons": [
+
+                # PLAY
                 {
                     "label": "▶ Play",
                     "method": "animate",
+
                     "args": [
                         None,
+
                         {
                             "frame": {
-                                "duration": 40,
+                                "duration": 30,
                                 "redraw": True
                             },
+
                             "transition": {
                                 "duration": 0
                             },
+
                             "fromcurrent": True,
+
+                            # Continuously loop
                             "mode": "immediate"
                         }
                     ]
                 },
+
+                # PAUSE
                 {
                     "label": "⏸ Pause",
                     "method": "animate",
+
                     "args": [
                         [None],
+
                         {
                             "frame": {
                                 "duration": 0,
                                 "redraw": False
                             },
+
                             "mode": "immediate"
                         }
                     ]
@@ -191,6 +210,7 @@ fig.update_layout(
 # --------------------------------------------------
 
 fig.update_layout(
+
     title="Transverse Sinusoidal Wave",
 
     xaxis=dict(
@@ -223,7 +243,7 @@ fig.update_layout(
 )
 
 # --------------------------------------------------
-# Display Plot
+# Display
 # --------------------------------------------------
 
 st.plotly_chart(
@@ -232,16 +252,15 @@ st.plotly_chart(
 )
 
 # --------------------------------------------------
-# Wave Information
+# Wave Properties
 # --------------------------------------------------
 
 st.subheader("Wave Properties")
 
-col1, col2, col3, col4 = st.columns(4)
-
 wave_speed = frequency * wavelength
-
 period = 1 / frequency
+
+col1, col2, col3, col4 = st.columns(4)
 
 with col1:
     st.metric(
@@ -276,19 +295,9 @@ st.subheader("Wave Equation")
 st.latex(
     r"""
     y(x,t) =
-    A\sin\left(\frac{2\pi}{\lambda}x
-    -2\pi ft\right)
+    A\sin\left(
+    \frac{2\pi}{\lambda}x
+    -2\pi ft
+    \right)
     """
-)
-
-st.write(
-    f"Current amplitude: **{amplitude} px**"
-)
-
-st.write(
-    f"Current frequency: **{frequency:.1f} Hz**"
-)
-
-st.write(
-    f"Current wavelength: **{wavelength} px**"
 )
