@@ -1,6 +1,6 @@
 import streamlit as st
 import numpy as np
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 # --------------------------------------------------
 # Page Configuration
@@ -19,8 +19,8 @@ st.set_page_config(
 st.title("〰️ Interactive Transverse Sinusoidal Wave")
 
 st.write(
-    "Adjust the amplitude, frequency, wavelength, and time "
-    "to see how they affect a transverse wave."
+    "Use the sliders to change the amplitude and frequency "
+    "of the transverse wave."
 )
 
 # --------------------------------------------------
@@ -30,11 +30,11 @@ st.write(
 st.sidebar.header("Wave Controls")
 
 amplitude = st.sidebar.slider(
-    "Amplitude (m)",
-    min_value=0.1,
-    max_value=5.0,
-    value=2.0,
-    step=0.1
+    "Amplitude",
+    min_value=20,
+    max_value=200,
+    value=100,
+    step=5
 )
 
 frequency = st.sidebar.slider(
@@ -45,102 +45,188 @@ frequency = st.sidebar.slider(
     step=0.1
 )
 
-wavelength = st.sidebar.slider(
-    "Wavelength (m)",
-    min_value=1.0,
-    max_value=20.0,
-    value=10.0,
-    step=0.5
-)
-
-time = st.sidebar.slider(
-    "Time (s)",
-    min_value=0.0,
-    max_value=10.0,
-    value=0.0,
-    step=0.1
-)
-
 # --------------------------------------------------
-# Calculate Wave Properties
+# Wave Settings
 # --------------------------------------------------
 
-wave_number = 2 * np.pi / wavelength
+wavelength = 400
 
-angular_frequency = 2 * np.pi * frequency
+# x positions
+x = np.linspace(0, 1200, 600)
 
-wave_speed = frequency * wavelength
+# Center/equilibrium position
+center_y = 0
 
-period = 1 / frequency
+# Number of animation frames
+num_frames = 100
 
-# --------------------------------------------------
-# Create x values
-# --------------------------------------------------
-
-x = np.linspace(
-    0,
-    2 * wavelength,
-    1000
-)
+# Time values
+times = np.linspace(0, 4, num_frames)
 
 # --------------------------------------------------
-# Sinusoidal Wave Equation
+# Create Initial Wave
 # --------------------------------------------------
 
 y = amplitude * np.sin(
-    wave_number * x - angular_frequency * time
+    2 * np.pi * x / wavelength
 )
 
 # --------------------------------------------------
-# Create Matplotlib Figure
+# Create Plotly Figure
 # --------------------------------------------------
 
-fig, ax = plt.subplots(figsize=(12, 5))
+fig = go.Figure()
 
-ax.plot(
-    x,
-    y,
-    linewidth=3
+# Initial wave
+fig.add_trace(
+    go.Scatter(
+        x=x,
+        y=y,
+        mode="lines",
+        line=dict(
+            width=4
+        ),
+        name="Wave"
+    )
 )
 
 # Equilibrium line
-ax.axhline(
-    0,
-    linestyle="--",
-    linewidth=1.5
+fig.add_trace(
+    go.Scatter(
+        x=[0, 1200],
+        y=[0, 0],
+        mode="lines",
+        line=dict(
+            width=2,
+            dash="dash"
+        ),
+        name="Equilibrium"
+    )
 )
 
 # --------------------------------------------------
-# Labels
+# Create Animation Frames
 # --------------------------------------------------
 
-ax.set_title(
-    "Transverse Sinusoidal Wave",
-    fontsize=18
-)
+frames = []
 
-ax.set_xlabel(
-    "Position (m)",
-    fontsize=13
-)
+for t in times:
 
-ax.set_ylabel(
-    "Displacement (m)",
-    fontsize=13
-)
+    y_frame = amplitude * np.sin(
+        2 * np.pi * x / wavelength
+        - 2 * np.pi * frequency * t
+    )
 
-ax.set_ylim(
-    -amplitude * 1.3,
-    amplitude * 1.3
-)
+    frame = go.Frame(
+        data=[
+            go.Scatter(
+                x=x,
+                y=y_frame,
+                mode="lines",
+                line=dict(
+                    width=4
+                )
+            )
+        ],
+        name=f"{t:.2f}"
+    )
 
-ax.grid(True, alpha=0.3)
+    frames.append(frame)
+
+fig.frames = frames
 
 # --------------------------------------------------
-# Display Graph
+# Animation Controls
 # --------------------------------------------------
 
-st.pyplot(
+fig.update_layout(
+    updatemenus=[
+        {
+            "type": "buttons",
+            "showactive": False,
+            "x": 0.5,
+            "y": -0.15,
+            "xanchor": "center",
+            "yanchor": "top",
+            "buttons": [
+                {
+                    "label": "▶ Play",
+                    "method": "animate",
+                    "args": [
+                        None,
+                        {
+                            "frame": {
+                                "duration": 40,
+                                "redraw": True
+                            },
+                            "transition": {
+                                "duration": 0
+                            },
+                            "fromcurrent": True,
+                            "mode": "immediate"
+                        }
+                    ]
+                },
+                {
+                    "label": "⏸ Pause",
+                    "method": "animate",
+                    "args": [
+                        [None],
+                        {
+                            "frame": {
+                                "duration": 0,
+                                "redraw": False
+                            },
+                            "mode": "immediate"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+)
+
+# --------------------------------------------------
+# Graph Formatting
+# --------------------------------------------------
+
+fig.update_layout(
+    title="Transverse Sinusoidal Wave",
+
+    xaxis=dict(
+        title="Position",
+        range=[0, 1200],
+        zeroline=False
+    ),
+
+    yaxis=dict(
+        title="Displacement",
+        range=[
+            -amplitude * 1.3,
+            amplitude * 1.3
+        ],
+        zeroline=False
+    ),
+
+    height=550,
+
+    template="plotly_dark",
+
+    hovermode="x unified",
+
+    margin=dict(
+        l=60,
+        r=30,
+        t=70,
+        b=100
+    )
+)
+
+# --------------------------------------------------
+# Display Plot
+# --------------------------------------------------
+
+st.plotly_chart(
     fig,
     use_container_width=True
 )
@@ -153,49 +239,33 @@ st.subheader("Wave Properties")
 
 col1, col2, col3, col4 = st.columns(4)
 
+wave_speed = frequency * wavelength
+
+period = 1 / frequency
+
 with col1:
     st.metric(
         "Amplitude",
-        f"{amplitude:.2f} m"
+        f"{amplitude} px"
     )
 
 with col2:
     st.metric(
         "Frequency",
-        f"{frequency:.2f} Hz"
+        f"{frequency:.1f} Hz"
     )
 
 with col3:
     st.metric(
         "Wavelength",
-        f"{wavelength:.2f} m"
+        f"{wavelength} px"
     )
 
 with col4:
     st.metric(
         "Wave Speed",
-        f"{wave_speed:.2f} m/s"
+        f"{wave_speed:.1f} px/s"
     )
-
-# --------------------------------------------------
-# Additional Information
-# --------------------------------------------------
-
-st.subheader("Other Wave Quantities")
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.write("**Wave Number**")
-    st.write(f"k = {wave_number:.3f} rad/m")
-
-with col2:
-    st.write("**Angular Frequency**")
-    st.write(f"ω = {angular_frequency:.3f} rad/s")
-
-with col3:
-    st.write("**Period**")
-    st.write(f"T = {period:.3f} s")
 
 # --------------------------------------------------
 # Equation
@@ -204,42 +274,21 @@ with col3:
 st.subheader("Wave Equation")
 
 st.latex(
-    r"y(x,t) = A\sin(kx-\omega t)"
-)
-
-st.write(
-    f"With the current values:"
-)
-
-st.latex(
-    rf"""
+    r"""
     y(x,t) =
-    {amplitude:.2f}
-    \sin\left(
-    {wave_number:.3f}x -
-    {angular_frequency:.3f}t
-    \right)
+    A\sin\left(\frac{2\pi}{\lambda}x
+    -2\pi ft\right)
     """
 )
 
-# --------------------------------------------------
-# Physics Relationships
-# --------------------------------------------------
-
-st.subheader("Important Relationships")
-
-st.latex(
-    r"v = f\lambda"
+st.write(
+    f"Current amplitude: **{amplitude} px**"
 )
 
-st.latex(
-    r"T = \frac{1}{f}"
+st.write(
+    f"Current frequency: **{frequency:.1f} Hz**"
 )
 
-st.latex(
-    r"k = \frac{2\pi}{\lambda}"
-)
-
-st.latex(
-    r"\omega = 2\pi f"
+st.write(
+    f"Current wavelength: **{wavelength} px**"
 )
