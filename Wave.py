@@ -14,8 +14,8 @@ st.set_page_config(
 st.title("〰️ Interactive Transverse Sinusoidal Wave")
 
 st.write(
-    "Adjust the sliders in real time to change the amplitude, "
-    "frequency, and animation speed."
+    "Adjust the amplitude, frequency, wavelength, and "
+    "animation speed using the controls below."
 )
 
 # --------------------------------------------------
@@ -33,6 +33,10 @@ html_code = """
 
 <style>
 
+/* ==================================================
+   GENERAL
+================================================== */
+
 body {
     margin: 0;
     background-color: #141923;
@@ -40,69 +44,189 @@ body {
     font-family: Arial, sans-serif;
 }
 
-/* -----------------------------------------------
-   Controls
------------------------------------------------- */
+
+/* ==================================================
+   CONTROL PANEL
+================================================== */
 
 .control-panel {
+
     background-color: #1d2330;
-    padding: 15px 20px;
+
+    padding: 18px 22px;
+
     border-radius: 10px;
-    margin-bottom: 10px;
+
+    margin-bottom: 12px;
+
 }
+
 
 .control-row {
+
     display: flex;
+
     align-items: center;
+
     gap: 15px;
-    margin-bottom: 12px;
+
+    margin-bottom: 14px;
+
 }
+
 
 .control-row:last-child {
+
     margin-bottom: 0;
+
 }
+
 
 label {
+
     width: 170px;
+
     font-size: 16px;
+
+    flex-shrink: 0;
+
 }
+
 
 input[type="range"] {
+
     flex: 1;
+
     cursor: pointer;
+
 }
+
 
 .value {
-    width: 80px;
+
+    width: 100px;
+
     text-align: right;
+
     font-weight: bold;
+
 }
 
-/* -----------------------------------------------
-   Buttons
------------------------------------------------- */
 
-.buttons {
+/* ==================================================
+   WAVE RELATIONSHIP
+================================================== */
+
+.relationship {
+
+    background-color: #202736;
+
+    border-radius: 10px;
+
+    padding: 14px 20px;
+
+    margin-bottom: 12px;
+
     text-align: center;
-    margin-top: 5px;
+
 }
 
-button {
+
+.relationship-title {
+
+    font-size: 18px;
+
+    font-weight: bold;
+
+    margin-bottom: 8px;
+
+}
+
+
+.relationship-formula {
+
+    font-size: 26px;
+
+    font-weight: bold;
+
+    margin-bottom: 8px;
+
+}
+
+
+.relationship-text {
+
+    font-size: 15px;
+
+    line-height: 1.5;
+
+    color: #dddddd;
+
+}
+
+
+/* ==================================================
+   LIVE VALUES
+================================================== */
+
+.live-values {
+
+    text-align: center;
+
     font-size: 16px;
-    padding: 8px 18px;
-    margin: 4px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
+
+    margin-top: 8px;
+
 }
 
-/* -----------------------------------------------
-   Plot
------------------------------------------------- */
+
+.live-values span {
+
+    font-weight: bold;
+
+}
+
+
+/* ==================================================
+   PLOT
+================================================== */
 
 #plot {
+
     width: 100%;
+
     height: 550px;
+
+}
+
+
+/* ==================================================
+   BUTTONS
+================================================== */
+
+.buttons {
+
+    text-align: center;
+
+    margin-top: 5px;
+
+}
+
+
+button {
+
+    font-size: 16px;
+
+    padding: 8px 18px;
+
+    margin: 4px;
+
+    border-radius: 6px;
+
+    border: none;
+
+    cursor: pointer;
+
 }
 
 </style>
@@ -174,6 +298,33 @@ button {
     </div>
 
 
+    <!-- WAVELENGTH -->
+
+    <div class="control-row">
+
+        <label>
+            Wavelength
+        </label>
+
+        <input
+            id="wavelengthSlider"
+            type="range"
+            min="100"
+            max="800"
+            value="400"
+            step="5"
+        >
+
+        <div
+            class="value"
+            id="wavelengthValue"
+        >
+            400 px
+        </div>
+
+    </div>
+
+
     <!-- ANIMATION SPEED -->
 
     <div class="control-row">
@@ -197,6 +348,46 @@ button {
         >
             1.0×
         </div>
+
+    </div>
+
+</div>
+
+
+<!-- ==================================================
+     SPEED / FREQUENCY / WAVELENGTH RELATIONSHIP
+================================================== -->
+
+<div class="relationship">
+
+    <div class="relationship-title">
+        Relationship Between Wave Speed, Frequency, and Wavelength
+    </div>
+
+    <div class="relationship-formula">
+        v = f × λ
+    </div>
+
+    <div class="relationship-text">
+
+        Wave speed is directly proportional to frequency
+        when wavelength is constant, and directly proportional
+        to wavelength when frequency is constant.
+
+        <br>
+
+        Increasing frequency or wavelength increases wave speed.
+
+    </div>
+
+    <div class="live-values">
+
+        Current:
+        <span id="liveFrequency">1.0 Hz</span>
+        ×
+        <span id="liveWavelength">400 px</span>
+        =
+        <span id="liveSpeed">400 px/s</span>
 
     </div>
 
@@ -234,34 +425,20 @@ button {
 <script>
 
 // ==================================================
-// INITIAL PARAMETERS
+// WAVE PARAMETERS
 // ==================================================
 
 let amplitude = 100;
 
 let frequency = 1.0;
 
+let wavelength = 400;
+
 let animationSpeed = 1.0;
 
-const wavelength = 400;
-
 
 // ==================================================
-// FIXED Y-AXIS RANGE
-// ==================================================
-//
-// IMPORTANT:
-//
-// This does NOT change when amplitude changes.
-//
-// Therefore:
-//
-// A = 50  -> small wave
-//
-// A = 100 -> medium wave
-//
-// A = 200 -> large wave
-//
+// FIXED Y-AXIS
 // ==================================================
 
 const yAxisMin = -220;
@@ -270,7 +447,7 @@ const yAxisMax = 220;
 
 
 // ==================================================
-// X VALUES
+// X AXIS
 // ==================================================
 
 const numberOfPoints = 600;
@@ -288,10 +465,15 @@ for (
 ) {
 
     x.push(
+
         xMin +
+
         (xMax - xMin) *
+
         i /
+
         (numberOfPoints - 1)
+
     );
 
 }
@@ -300,11 +482,6 @@ for (
 // ==================================================
 // PARTICLE POSITIONS
 // ==================================================
-//
-// These NEVER change horizontally.
-//
-// They only move vertically.
-//
 
 const particlePositions = [
 
@@ -324,7 +501,7 @@ const particlePositions = [
 
 
 // ==================================================
-// CREATE INITIAL WAVE
+// CALCULATE WAVE
 // ==================================================
 
 function calculateWave(t) {
@@ -346,13 +523,16 @@ function calculateWave(t) {
         y.push(
 
             amplitude *
+
             Math.sin(
 
                 2 *
                 Math.PI *
                 x[i] /
                 wavelength
+
                 -
+
                 phase
 
             )
@@ -367,7 +547,7 @@ function calculateWave(t) {
 
 
 // ==================================================
-// CREATE PARTICLE POSITIONS
+// CALCULATE PARTICLES
 // ==================================================
 
 function calculateParticles(t) {
@@ -389,13 +569,16 @@ function calculateParticles(t) {
         y.push(
 
             amplitude *
+
             Math.sin(
 
                 2 *
                 Math.PI *
                 particlePositions[i] /
                 wavelength
+
                 -
+
                 phase
 
             )
@@ -617,12 +800,10 @@ function animateWave(timestamp) {
     }
 
 
-    // ----------------------------------------------
-    // Calculate elapsed real time
-    // ----------------------------------------------
-
     const deltaTime =
+
         (timestamp - lastTimestamp) /
+
         1000;
 
 
@@ -630,16 +811,18 @@ function animateWave(timestamp) {
 
 
     // ----------------------------------------------
-    // Apply animation-speed multiplier
+    // Animation speed
     // ----------------------------------------------
 
     elapsedTime +=
+
         deltaTime *
+
         animationSpeed;
 
 
     // ----------------------------------------------
-    // Calculate new wave
+    // Calculate wave
     // ----------------------------------------------
 
     const newWave =
@@ -689,9 +872,85 @@ function animateWave(timestamp) {
     // ----------------------------------------------
 
     animationID =
+
         requestAnimationFrame(
             animateWave
         );
+
+}
+
+
+// ==================================================
+// UPDATE WAVE IMMEDIATELY
+// ==================================================
+
+function updateWaveImmediately() {
+
+    const newWave =
+        calculateWave(elapsedTime);
+
+    const newParticles =
+        calculateParticles(elapsedTime);
+
+
+    Plotly.restyle(
+
+        "plot",
+
+        {
+            y: [newWave]
+        },
+
+        [0]
+
+    );
+
+
+    Plotly.restyle(
+
+        "plot",
+
+        {
+            y: [newParticles]
+        },
+
+        [2]
+
+    );
+
+}
+
+
+// ==================================================
+// UPDATE LIVE SPEED DISPLAY
+// ==================================================
+
+function updateSpeedDisplay() {
+
+    const speed =
+        frequency *
+        wavelength;
+
+
+    document.getElementById(
+        "liveFrequency"
+    ).textContent =
+        frequency.toFixed(1)
+        + " Hz";
+
+
+    document.getElementById(
+        "liveWavelength"
+    ).textContent =
+        wavelength.toFixed(0)
+        + " px";
+
+
+    document.getElementById(
+        "liveSpeed"
+    ).textContent =
+        speed.toFixed(1)
+        + " px/s";
 
 }
 
@@ -713,6 +972,7 @@ function playWave() {
     lastTimestamp = null;
 
     animationID =
+
         requestAnimationFrame(
             animateWave
         );
@@ -751,39 +1011,7 @@ function resetWave() {
 
     lastTimestamp = null;
 
-
-    const resetWave =
-        calculateWave(0);
-
-
-    const resetParticles =
-        calculateParticles(0);
-
-
-    Plotly.restyle(
-
-        "plot",
-
-        {
-            y: [resetWave]
-        },
-
-        [0]
-
-    );
-
-
-    Plotly.restyle(
-
-        "plot",
-
-        {
-            y: [resetParticles]
-        },
-
-        [2]
-
-    );
+    updateWaveImmediately();
 
 }
 
@@ -793,13 +1021,9 @@ function resetWave() {
 // ==================================================
 
 const amplitudeSlider =
+
     document.getElementById(
         "amplitudeSlider"
-    );
-
-const amplitudeValue =
-    document.getElementById(
-        "amplitudeValue"
     );
 
 
@@ -807,64 +1031,23 @@ amplitudeSlider.addEventListener(
     "input",
     function() {
 
-        // ------------------------------------------
-        // Update amplitude IMMEDIATELY
-        // ------------------------------------------
-
         amplitude =
-            parseFloat(
-                this.value
-            );
+            parseFloat(this.value);
 
 
-        amplitudeValue.textContent =
+        document.getElementById(
+            "amplitudeValue"
+        ).textContent =
+
             amplitude.toFixed(0)
             + " px";
 
 
-        // ------------------------------------------
-        // Immediately redraw wave
-        // ------------------------------------------
+        // Immediately update
 
-        const newWave =
-            calculateWave(
-                elapsedTime
-            );
-
-
-        const newParticles =
-            calculateParticles(
-                elapsedTime
-            );
-
-
-        Plotly.restyle(
-
-            "plot",
-
-            {
-                y: [newWave]
-            },
-
-            [0]
-
-        );
-
-
-        Plotly.restyle(
-
-            "plot",
-
-            {
-                y: [newParticles]
-            },
-
-            [2]
-
-        );
+        updateWaveImmediately();
 
     }
-
 );
 
 
@@ -873,13 +1056,9 @@ amplitudeSlider.addEventListener(
 // ==================================================
 
 const frequencySlider =
+
     document.getElementById(
         "frequencySlider"
-    );
-
-const frequencyValue =
-    document.getElementById(
-        "frequencyValue"
     );
 
 
@@ -887,22 +1066,75 @@ frequencySlider.addEventListener(
     "input",
     function() {
 
-        // ------------------------------------------
-        // Update frequency IMMEDIATELY
-        // ------------------------------------------
-
         frequency =
-            parseFloat(
-                this.value
-            );
+            parseFloat(this.value);
 
 
-        frequencyValue.textContent =
+        document.getElementById(
+            "frequencyValue"
+        ).textContent =
+
             frequency.toFixed(1)
             + " Hz";
 
-    }
 
+        // Update speed relationship
+
+        updateSpeedDisplay();
+
+        // Immediately update wave
+
+        updateWaveImmediately();
+
+    }
+);
+
+
+// ==================================================
+// WAVELENGTH SLIDER
+// ==================================================
+
+const wavelengthSlider =
+
+    document.getElementById(
+        "wavelengthSlider"
+    );
+
+
+wavelengthSlider.addEventListener(
+    "input",
+    function() {
+
+        // ------------------------------------------
+        // Update wavelength in REAL TIME
+        // ------------------------------------------
+
+        wavelength =
+            parseFloat(this.value);
+
+
+        document.getElementById(
+            "wavelengthValue"
+        ).textContent =
+
+            wavelength.toFixed(0)
+            + " px";
+
+
+        // ------------------------------------------
+        // Update speed immediately
+        // ------------------------------------------
+
+        updateSpeedDisplay();
+
+
+        // ------------------------------------------
+        // Redraw wave immediately
+        // ------------------------------------------
+
+        updateWaveImmediately();
+
+    }
 );
 
 
@@ -911,13 +1143,9 @@ frequencySlider.addEventListener(
 // ==================================================
 
 const speedSlider =
+
     document.getElementById(
         "speedSlider"
-    );
-
-const speedValue =
-    document.getElementById(
-        "speedValue"
     );
 
 
@@ -925,22 +1153,18 @@ speedSlider.addEventListener(
     "input",
     function() {
 
-        // ------------------------------------------
-        // Update animation speed IMMEDIATELY
-        // ------------------------------------------
-
         animationSpeed =
-            parseFloat(
-                this.value
-            );
+            parseFloat(this.value);
 
 
-        speedValue.textContent =
+        document.getElementById(
+            "speedValue"
+        ).textContent =
+
             animationSpeed.toFixed(1)
             + "×";
 
     }
-
 );
 
 
@@ -949,9 +1173,17 @@ speedSlider.addEventListener(
 // ==================================================
 
 animationID =
+
     requestAnimationFrame(
         animateWave
     );
+
+
+// ==================================================
+// INITIAL SPEED DISPLAY
+// ==================================================
+
+updateSpeedDisplay();
 
 </script>
 
@@ -961,11 +1193,11 @@ animationID =
 """
 
 # --------------------------------------------------
-# Display Application
+# Display App
 # --------------------------------------------------
 
 components.html(
     html_code,
-    height=750,
+    height=850,
     scrolling=False
 )
