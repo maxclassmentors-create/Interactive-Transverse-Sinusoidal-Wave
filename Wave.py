@@ -1,391 +1,245 @@
-import pygame
-import math
+import streamlit as st
+import numpy as np
+import matplotlib.pyplot as plt
 
-# -----------------------------
-# Initialize Pygame
-# -----------------------------
-pygame.init()
+# --------------------------------------------------
+# Page Configuration
+# --------------------------------------------------
 
-WIDTH = 1200
-HEIGHT = 700
-
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Interactive Transverse Sinusoidal Wave")
-
-clock = pygame.time.Clock()
-
-# -----------------------------
-# Colors
-# -----------------------------
-BACKGROUND = (20, 25, 35)
-GRID = (60, 65, 75)
-WHITE = (240, 240, 240)
-WAVE_COLOR = (50, 180, 255)
-EQUILIBRIUM_COLOR = (150, 150, 150)
-TEXT_COLOR = (240, 240, 240)
-SLIDER_COLOR = (100, 100, 110)
-HANDLE_COLOR = (255, 180, 50)
-
-# -----------------------------
-# Fonts
-# -----------------------------
-font = pygame.font.SysFont("Arial", 24)
-small_font = pygame.font.SysFont("Arial", 18)
-title_font = pygame.font.SysFont("Arial", 32, bold=True)
-
-# -----------------------------
-# Wave Variables
-# -----------------------------
-
-# Amplitude in pixels
-amplitude = 100
-
-# Frequency in Hz
-frequency = 1.0
-
-# Wavelength in pixels
-wavelength = 400
-
-# Wave speed in pixels/second
-wave_speed = 400
-
-# Time variable
-time = 0
-
-# Pause state
-paused = False
-
-
-# -----------------------------
-# Slider Class
-# -----------------------------
-class Slider:
-    def __init__(self, x, y, width, min_value, max_value, value, label):
-        self.x = x
-        self.y = y
-        self.width = width
-
-        self.min_value = min_value
-        self.max_value = max_value
-        self.value = value
-
-        self.label = label
-
-        self.dragging = False
-
-    def value_to_x(self):
-        percentage = (
-            (self.value - self.min_value)
-            / (self.max_value - self.min_value)
-        )
-
-        return self.x + percentage * self.width
-
-    def x_to_value(self, mouse_x):
-        percentage = (mouse_x - self.x) / self.width
-
-        percentage = max(0, min(1, percentage))
-
-        return self.min_value + percentage * (
-            self.max_value - self.min_value
-        )
-
-    def handle_event(self, event):
-
-        if event.type == pygame.MOUSEBUTTONDOWN:
-
-            mouse_x, mouse_y = event.pos
-
-            handle_x = self.value_to_x()
-
-            if abs(mouse_x - handle_x) < 15 and abs(mouse_y - self.y) < 20:
-                self.dragging = True
-
-        elif event.type == pygame.MOUSEBUTTONUP:
-
-            self.dragging = False
-
-        elif event.type == pygame.MOUSEMOTION:
-
-            if self.dragging:
-                mouse_x = event.pos[0]
-
-                self.value = self.x_to_value(mouse_x)
-
-    def draw(self, surface):
-
-        # Label
-        label_surface = font.render(
-            f"{self.label}: {self.value:.2f}",
-            True,
-            TEXT_COLOR
-        )
-
-        surface.blit(
-            label_surface,
-            (self.x, self.y - 45)
-        )
-
-        # Slider line
-        pygame.draw.line(
-            surface,
-            SLIDER_COLOR,
-            (self.x, self.y),
-            (self.x + self.width, self.y),
-            8
-        )
-
-        # Handle
-        handle_x = self.value_to_x()
-
-        pygame.draw.circle(
-            surface,
-            HANDLE_COLOR,
-            (int(handle_x), self.y),
-            12
-        )
-
-
-# -----------------------------
-# Create Sliders
-# -----------------------------
-
-amplitude_slider = Slider(
-    100, 580,
-    400,
-    20, 200,
-    amplitude,
-    "Amplitude (pixels)"
+st.set_page_config(
+    page_title="Interactive Transverse Wave",
+    page_icon="〰️",
+    layout="wide"
 )
 
-frequency_slider = Slider(
-    650, 580,
-    400,
-    0.1, 5.0,
-    frequency,
-    "Frequency (Hz)"
+# --------------------------------------------------
+# Title
+# --------------------------------------------------
+
+st.title("〰️ Interactive Transverse Sinusoidal Wave")
+
+st.write(
+    "Adjust the amplitude, frequency, wavelength, and time "
+    "to see how they affect a transverse wave."
 )
 
+# --------------------------------------------------
+# Sidebar Controls
+# --------------------------------------------------
 
-# -----------------------------
-# Draw Grid
-# -----------------------------
-def draw_grid():
+st.sidebar.header("Wave Controls")
 
-    # Vertical grid lines
-    for x in range(0, WIDTH, 50):
+amplitude = st.sidebar.slider(
+    "Amplitude (m)",
+    min_value=0.1,
+    max_value=5.0,
+    value=2.0,
+    step=0.1
+)
 
-        pygame.draw.line(
-            screen,
-            GRID,
-            (x, 150),
-            (x, 500),
-            1
-        )
+frequency = st.sidebar.slider(
+    "Frequency (Hz)",
+    min_value=0.1,
+    max_value=5.0,
+    value=1.0,
+    step=0.1
+)
 
-    # Horizontal grid lines
-    for y in range(150, 501, 50):
+wavelength = st.sidebar.slider(
+    "Wavelength (m)",
+    min_value=1.0,
+    max_value=20.0,
+    value=10.0,
+    step=0.5
+)
 
-        pygame.draw.line(
-            screen,
-            GRID,
-            (0, y),
-            (WIDTH, y),
-            1
-        )
+time = st.sidebar.slider(
+    "Time (s)",
+    min_value=0.0,
+    max_value=10.0,
+    value=0.0,
+    step=0.1
+)
 
+# --------------------------------------------------
+# Calculate Wave Properties
+# --------------------------------------------------
 
-# -----------------------------
-# Draw Wave
-# -----------------------------
-def draw_wave():
+wave_number = 2 * np.pi / wavelength
 
-    center_y = 325
+angular_frequency = 2 * np.pi * frequency
 
-    points = []
+wave_speed = frequency * wavelength
 
-    # Convert wave speed into phase movement.
-    phase = time * frequency * 2 * math.pi
+period = 1 / frequency
 
-    for x in range(WIDTH):
+# --------------------------------------------------
+# Create x values
+# --------------------------------------------------
 
-        # Sinusoidal transverse wave
-        y = center_y + amplitude * math.sin(
-            2 * math.pi * x / wavelength - phase
-        )
+x = np.linspace(
+    0,
+    2 * wavelength,
+    1000
+)
 
-        points.append((x, int(y)))
+# --------------------------------------------------
+# Sinusoidal Wave Equation
+# --------------------------------------------------
 
-    if len(points) > 1:
+y = amplitude * np.sin(
+    wave_number * x - angular_frequency * time
+)
 
-        pygame.draw.lines(
-            screen,
-            WAVE_COLOR,
-            False,
-            points,
-            4
-        )
+# --------------------------------------------------
+# Create Matplotlib Figure
+# --------------------------------------------------
 
+fig, ax = plt.subplots(figsize=(12, 5))
 
-# -----------------------------
-# Draw Equilibrium Line
-# -----------------------------
-def draw_equilibrium():
+ax.plot(
+    x,
+    y,
+    linewidth=3
+)
 
-    center_y = 325
+# Equilibrium line
+ax.axhline(
+    0,
+    linestyle="--",
+    linewidth=1.5
+)
 
-    pygame.draw.line(
-        screen,
-        EQUILIBRIUM_COLOR,
-        (0, center_y),
-        (WIDTH, center_y),
-        2
+# --------------------------------------------------
+# Labels
+# --------------------------------------------------
+
+ax.set_title(
+    "Transverse Sinusoidal Wave",
+    fontsize=18
+)
+
+ax.set_xlabel(
+    "Position (m)",
+    fontsize=13
+)
+
+ax.set_ylabel(
+    "Displacement (m)",
+    fontsize=13
+)
+
+ax.set_ylim(
+    -amplitude * 1.3,
+    amplitude * 1.3
+)
+
+ax.grid(True, alpha=0.3)
+
+# --------------------------------------------------
+# Display Graph
+# --------------------------------------------------
+
+st.pyplot(
+    fig,
+    use_container_width=True
+)
+
+# --------------------------------------------------
+# Wave Information
+# --------------------------------------------------
+
+st.subheader("Wave Properties")
+
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    st.metric(
+        "Amplitude",
+        f"{amplitude:.2f} m"
     )
 
-    label = small_font.render(
-        "Equilibrium position",
-        True,
-        EQUILIBRIUM_COLOR
+with col2:
+    st.metric(
+        "Frequency",
+        f"{frequency:.2f} Hz"
     )
 
-    screen.blit(
-        label,
-        (20, center_y + 10)
+with col3:
+    st.metric(
+        "Wavelength",
+        f"{wavelength:.2f} m"
     )
 
-
-# -----------------------------
-# Draw Information
-# -----------------------------
-def draw_information():
-
-    wave_speed_actual = frequency * wavelength
-
-    info = [
-        f"Amplitude = {amplitude:.1f} px",
-        f"Frequency = {frequency:.2f} Hz",
-        f"Wavelength = {wavelength:.0f} px",
-        f"Wave speed = f × λ = {wave_speed_actual:.1f} px/s"
-    ]
-
-    y = 90
-
-    for text in info:
-
-        surface = small_font.render(
-            text,
-            True,
-            TEXT_COLOR
-        )
-
-        screen.blit(surface, (30, y))
-
-        y += 25
-
-
-# -----------------------------
-# Main Program
-# -----------------------------
-running = True
-
-while running:
-
-    # Delta time in seconds
-    dt = clock.tick(60) / 1000
-
-    # -------------------------
-    # Events
-    # -------------------------
-    for event in pygame.event.get():
-
-        if event.type == pygame.QUIT:
-            running = False
-
-        # Sliders
-        amplitude_slider.handle_event(event)
-        frequency_slider.handle_event(event)
-
-        # Keyboard controls
-        if event.type == pygame.KEYDOWN:
-
-            # Space = pause/play
-            if event.key == pygame.K_SPACE:
-                paused = not paused
-
-            # R = reset
-            if event.key == pygame.K_r:
-
-                amplitude_slider.value = 100
-                frequency_slider.value = 1.0
-
-                time = 0
-
-    # -------------------------
-    # Update Variables
-    # -------------------------
-
-    amplitude = amplitude_slider.value
-    frequency = frequency_slider.value
-
-    # Update wave
-    if not paused:
-
-        time += dt
-
-    # -------------------------
-    # Drawing
-    # -------------------------
-
-    screen.fill(BACKGROUND)
-
-    # Title
-    title = title_font.render(
-        "Interactive Transverse Sinusoidal Wave",
-        True,
-        WHITE
+with col4:
+    st.metric(
+        "Wave Speed",
+        f"{wave_speed:.2f} m/s"
     )
 
-    screen.blit(
-        title,
-        (WIDTH // 2 - title.get_width() // 2, 20)
-    )
+# --------------------------------------------------
+# Additional Information
+# --------------------------------------------------
 
-    draw_grid()
-    draw_equilibrium()
-    draw_wave()
-    draw_information()
+st.subheader("Other Wave Quantities")
 
-    # Sliders
-    amplitude_slider.draw(screen)
-    frequency_slider.draw(screen)
+col1, col2, col3 = st.columns(3)
 
-    # Controls
-    controls = small_font.render(
-        "SPACE = Pause/Play       R = Reset",
-        True,
-        TEXT_COLOR
-    )
+with col1:
+    st.write("**Wave Number**")
+    st.write(f"k = {wave_number:.3f} rad/m")
 
-    screen.blit(
-        controls,
-        (WIDTH // 2 - controls.get_width() // 2, 650)
-    )
+with col2:
+    st.write("**Angular Frequency**")
+    st.write(f"ω = {angular_frequency:.3f} rad/s")
 
-    # Pause indicator
-    if paused:
+with col3:
+    st.write("**Period**")
+    st.write(f"T = {period:.3f} s")
 
-        pause_text = font.render(
-            "PAUSED",
-            True,
-            HANDLE_COLOR
-        )
+# --------------------------------------------------
+# Equation
+# --------------------------------------------------
 
-        screen.blit(
-            pause_text,
-            (WIDTH // 2 - pause_text.get_width() // 2, 110)
-        )
+st.subheader("Wave Equation")
 
-    pygame.display.flip()
+st.latex(
+    r"y(x,t) = A\sin(kx-\omega t)"
+)
 
+st.write(
+    f"With the current values:"
+)
 
-pygame.quit()
+st.latex(
+    rf"""
+    y(x,t) =
+    {amplitude:.2f}
+    \sin\left(
+    {wave_number:.3f}x -
+    {angular_frequency:.3f}t
+    \right)
+    """
+)
+
+# --------------------------------------------------
+# Physics Relationships
+# --------------------------------------------------
+
+st.subheader("Important Relationships")
+
+st.latex(
+    r"v = f\lambda"
+)
+
+st.latex(
+    r"T = \frac{1}{f}"
+)
+
+st.latex(
+    r"k = \frac{2\pi}{\lambda}"
+)
+
+st.latex(
+    r"\omega = 2\pi f"
+)
