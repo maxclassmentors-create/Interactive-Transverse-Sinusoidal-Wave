@@ -18,12 +18,12 @@ st.set_page_config(
 st.title("〰️ Interactive Transverse Sinusoidal Wave")
 
 st.write(
-    "Adjust the amplitude and frequency to see how they "
-    "affect a transverse wave."
+    "Adjust the amplitude, frequency, and animation speed "
+    "to explore transverse wave motion."
 )
 
 # --------------------------------------------------
-# Streamlit Controls
+# Sidebar Controls
 # --------------------------------------------------
 
 st.sidebar.header("Wave Controls")
@@ -44,6 +44,14 @@ frequency = st.sidebar.slider(
     step=0.1
 )
 
+animation_speed = st.sidebar.slider(
+    "Animation Speed",
+    min_value=0.1,
+    max_value=3.0,
+    value=1.0,
+    step=0.1
+)
+
 # --------------------------------------------------
 # Fixed Wave Properties
 # --------------------------------------------------
@@ -51,14 +59,15 @@ frequency = st.sidebar.slider(
 wavelength = 400
 
 # --------------------------------------------------
-# Calculate Properties
+# Calculate Physics
 # --------------------------------------------------
 
 wave_speed = frequency * wavelength
+
 period = 1 / frequency
 
 # --------------------------------------------------
-# Plotly + JavaScript
+# HTML / JavaScript / Plotly
 # --------------------------------------------------
 
 html_code = f"""
@@ -115,12 +124,11 @@ button {{
 
 </div>
 
-
 <script>
 
-// --------------------------------------------------
-// Wave Parameters
-// --------------------------------------------------
+// ==================================================
+// WAVE PARAMETERS
+// ==================================================
 
 const amplitude = {amplitude};
 
@@ -129,20 +137,22 @@ const frequency = {frequency};
 const wavelength = {wavelength};
 
 
-// --------------------------------------------------
-// Wave Configuration
-// --------------------------------------------------
+// ==================================================
+// ANIMATION SPEED
+// ==================================================
+
+const animationSpeed = {animation_speed};
+
+
+// ==================================================
+// X AXIS
+// ==================================================
 
 const numberOfPoints = 600;
 
 const xMin = 0;
 
 const xMax = 1200;
-
-
-// --------------------------------------------------
-// Create X Values
-// --------------------------------------------------
 
 const x = [];
 
@@ -157,27 +167,29 @@ for (let i = 0; i < numberOfPoints; i++) {{
 }}
 
 
-// --------------------------------------------------
-// Initial Wave
-// --------------------------------------------------
+// ==================================================
+// INITIAL WAVE
+// ==================================================
 
-let initialY = [];
+const initialY = [];
 
 for (let i = 0; i < x.length; i++) {{
 
     initialY.push(
+
         amplitude *
         Math.sin(
             2 * Math.PI * x[i] / wavelength
         )
+
     );
 
 }}
 
 
-// --------------------------------------------------
-// Wave Trace
-// --------------------------------------------------
+// ==================================================
+// WAVE TRACE
+// ==================================================
 
 const waveTrace = {{
 
@@ -188,9 +200,7 @@ const waveTrace = {{
     mode: "lines",
 
     line: {{
-
         width: 4
-
     }},
 
     name: "Wave"
@@ -198,9 +208,9 @@ const waveTrace = {{
 }};
 
 
-// --------------------------------------------------
-// Equilibrium Line
-// --------------------------------------------------
+// ==================================================
+// EQUILIBRIUM LINE
+// ==================================================
 
 const equilibriumTrace = {{
 
@@ -211,11 +221,8 @@ const equilibriumTrace = {{
     mode: "lines",
 
     line: {{
-
         width: 2,
-
         dash: "dash"
-
     }},
 
     name: "Equilibrium"
@@ -223,11 +230,16 @@ const equilibriumTrace = {{
 }};
 
 
-// --------------------------------------------------
-// Particle Positions
-// --------------------------------------------------
+// ==================================================
+// PARTICLES
+// ==================================================
+
+// IMPORTANT:
+// The x positions NEVER change.
+// Only the y positions change.
 
 const particlePositions = [
+
     100,
     200,
     300,
@@ -239,24 +251,28 @@ const particlePositions = [
     900,
     1000,
     1100
+
 ];
 
 
-// --------------------------------------------------
-// Particle Trace
-// --------------------------------------------------
+const initialParticleY = [];
 
-let particleY = [];
+for (
+    let i = 0;
+    i < particlePositions.length;
+    i++
+) {{
 
-for (let i = 0; i < particlePositions.length; i++) {{
-
-    particleY.push(
+    initialParticleY.push(
 
         amplitude *
         Math.sin(
-            2 * Math.PI *
+
+            2 *
+            Math.PI *
             particlePositions[i] /
             wavelength
+
         )
 
     );
@@ -268,14 +284,12 @@ const particleTrace = {{
 
     x: particlePositions,
 
-    y: particleY,
+    y: initialParticleY,
 
     mode: "markers",
 
     marker: {{
-
-        size: 9
-
+        size: 10
     }},
 
     name: "Particles"
@@ -283,22 +297,17 @@ const particleTrace = {{
 }};
 
 
-// --------------------------------------------------
-// Plot Layout
-// --------------------------------------------------
+// ==================================================
+// PLOT LAYOUT
+// ==================================================
 
 const layout = {{
 
     title: {{
-
         text: "Transverse Sinusoidal Wave",
-
         font: {{
-
             size: 22
-
         }}
-
     }},
 
     paper_bgcolor: "#141923",
@@ -306,9 +315,7 @@ const layout = {{
     plot_bgcolor: "#141923",
 
     font: {{
-
         color: "#eeeeee"
-
     }},
 
     xaxis: {{
@@ -341,11 +348,8 @@ const layout = {{
     margin: {{
 
         l: 70,
-
         r: 30,
-
         t: 70,
-
         b: 60
 
     }},
@@ -355,9 +359,9 @@ const layout = {{
 }};
 
 
-// --------------------------------------------------
-// Create Plot
-// --------------------------------------------------
+// ==================================================
+// CREATE PLOT
+// ==================================================
 
 Plotly.newPlot(
 
@@ -372,65 +376,76 @@ Plotly.newPlot(
     layout,
 
     {{
-
         responsive: true
-
     }}
 
 );
 
 
-// --------------------------------------------------
-// Animation Variables
-// --------------------------------------------------
+// ==================================================
+// ANIMATION VARIABLES
+// ==================================================
 
 let animationID = null;
 
 let startTime = null;
 
-let elapsedBeforePause = 0;
+let elapsedTime = 0;
 
 let isPlaying = true;
 
 
-// --------------------------------------------------
-// Animation Function
-// --------------------------------------------------
+// ==================================================
+// ANIMATION FUNCTION
+// ==================================================
 
 function animateWave(timestamp) {{
 
     if (!isPlaying) {{
-
         return;
-
     }}
 
+
+    // Start timing
 
     if (startTime === null) {{
 
         startTime =
             timestamp -
-            elapsedBeforePause * 1000;
+            elapsedTime * 1000;
 
     }}
 
 
-    const elapsed =
+    // Real elapsed time
+
+    const realElapsed =
         (timestamp - startTime) / 1000;
 
 
-    // Phase
+    // ----------------------------------------------
+    // Apply animation speed
+    // ----------------------------------------------
+
+    const t =
+        realElapsed *
+        animationSpeed;
+
+
+    // ----------------------------------------------
+    // Calculate phase
+    // ----------------------------------------------
 
     const phase =
         2 *
         Math.PI *
         frequency *
-        elapsed;
+        t;
 
 
-    // --------------------------------------------------
-    // Calculate Wave
-    // --------------------------------------------------
+    // ==================================================
+    // CALCULATE WAVE
+    // ==================================================
 
     const newY = [];
 
@@ -445,7 +460,8 @@ function animateWave(timestamp) {{
                 Math.PI *
                 x[i] /
                 wavelength
-                - phase
+                -
+                phase
 
             )
 
@@ -454,9 +470,9 @@ function animateWave(timestamp) {{
     }}
 
 
-    // --------------------------------------------------
-    // Calculate Particle Motion
-    // --------------------------------------------------
+    // ==================================================
+    // CALCULATE PARTICLE MOTION
+    // ==================================================
 
     const newParticleY = [];
 
@@ -465,6 +481,10 @@ function animateWave(timestamp) {{
         i < particlePositions.length;
         i++
     ) {{
+
+        // x NEVER changes.
+        //
+        // Only y changes.
 
         newParticleY.push(
 
@@ -475,7 +495,8 @@ function animateWave(timestamp) {{
                 Math.PI *
                 particlePositions[i] /
                 wavelength
-                - phase
+                -
+                phase
 
             )
 
@@ -484,18 +505,16 @@ function animateWave(timestamp) {{
     }}
 
 
-    // --------------------------------------------------
-    // Update Plot
-    // --------------------------------------------------
+    // ==================================================
+    // UPDATE WAVE
+    // ==================================================
 
     Plotly.restyle(
 
         "plot",
 
         {{
-
             y: [newY]
-
         }},
 
         [0]
@@ -503,14 +522,16 @@ function animateWave(timestamp) {{
     );
 
 
+    // ==================================================
+    // UPDATE PARTICLES
+    // ==================================================
+
     Plotly.restyle(
 
         "plot",
 
         {{
-
             y: [newParticleY]
-
         }},
 
         [2]
@@ -518,9 +539,11 @@ function animateWave(timestamp) {{
     );
 
 
-    // --------------------------------------------------
-    // Continue Forever
-    // --------------------------------------------------
+    // ==================================================
+    // CONTINUE ANIMATION FOREVER
+    // ==================================================
+
+    elapsedTime = t;
 
     animationID =
         requestAnimationFrame(animateWave);
@@ -528,18 +551,15 @@ function animateWave(timestamp) {{
 }}
 
 
-// --------------------------------------------------
-// Play
-// --------------------------------------------------
+// ==================================================
+// PLAY
+// ==================================================
 
 function playWave() {{
 
     if (isPlaying) {{
-
         return;
-
     }}
-
 
     isPlaying = true;
 
@@ -551,49 +571,45 @@ function playWave() {{
 }}
 
 
-// --------------------------------------------------
-// Pause
-// --------------------------------------------------
+// ==================================================
+// PAUSE
+// ==================================================
 
 function pauseWave() {{
 
     if (!isPlaying) {{
-
         return;
-
     }}
-
 
     isPlaying = false;
 
     cancelAnimationFrame(animationID);
 
-    startTime =
-        performance.now() -
-        elapsedBeforePause * 1000;
-
 }}
 
 
-// --------------------------------------------------
-// Reset
-// --------------------------------------------------
+// ==================================================
+// RESET
+// ==================================================
 
 function resetWave() {{
 
     cancelAnimationFrame(animationID);
 
-    isPlaying = true;
+    elapsedTime = 0;
 
     startTime = null;
 
-    elapsedBeforePause = 0;
+    isPlaying = true;
 
-    const zeroY = [];
+
+    // Reset wave
+
+    const resetY = [];
 
     for (let i = 0; i < x.length; i++) {{
 
-        zeroY.push(
+        resetY.push(
 
             amplitude *
             Math.sin(
@@ -610,7 +626,9 @@ function resetWave() {{
     }}
 
 
-    const zeroParticleY = [];
+    // Reset particles
+
+    const resetParticleY = [];
 
     for (
         let i = 0;
@@ -618,7 +636,7 @@ function resetWave() {{
         i++
     ) {{
 
-        zeroParticleY.push(
+        resetParticleY.push(
 
             amplitude *
             Math.sin(
@@ -639,7 +657,9 @@ function resetWave() {{
 
         "plot",
 
-        {{ y: [zeroY] }},
+        {{
+            y: [resetY]
+        }},
 
         [0]
 
@@ -650,7 +670,9 @@ function resetWave() {{
 
         "plot",
 
-        {{ y: [zeroParticleY] }},
+        {{
+            y: [resetParticleY]
+        }},
 
         [2]
 
@@ -663,9 +685,9 @@ function resetWave() {{
 }}
 
 
-// --------------------------------------------------
-// Start Automatically
-// --------------------------------------------------
+// ==================================================
+// START ANIMATION
+// ==================================================
 
 animationID =
     requestAnimationFrame(animateWave);
@@ -720,7 +742,7 @@ with col4:
     )
 
 # --------------------------------------------------
-# Additional Information
+# Additional Properties
 # --------------------------------------------------
 
 col1, col2 = st.columns(2)
@@ -734,7 +756,7 @@ with col1:
     )
 
     st.write(
-        f"**T = {period:.2f} seconds**"
+        f"T = {period:.2f} seconds"
     )
 
 with col2:
@@ -746,7 +768,7 @@ with col2:
     )
 
     st.write(
-        f"**v = {wave_speed:.1f} px/s**"
+        f"v = {wave_speed:.1f} px/s"
     )
 
 # --------------------------------------------------
@@ -766,4 +788,9 @@ st.latex(
     2\pi ft
     \right)
     """
+)
+
+st.info(
+    "The particles oscillate vertically. "
+    "Their horizontal positions remain fixed."
 )
