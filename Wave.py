@@ -11,66 +11,18 @@ st.set_page_config(
     layout="wide"
 )
 
-# --------------------------------------------------
-# Title
-# --------------------------------------------------
-
 st.title("〰️ Interactive Transverse Sinusoidal Wave")
 
 st.write(
-    "Adjust the amplitude, frequency, and animation speed "
-    "to explore transverse wave motion."
+    "Adjust the sliders in real time to change the amplitude, "
+    "frequency, and animation speed."
 )
-
-# --------------------------------------------------
-# Sidebar Controls
-# --------------------------------------------------
-
-st.sidebar.header("Wave Controls")
-
-amplitude = st.sidebar.slider(
-    "Amplitude",
-    min_value=20,
-    max_value=200,
-    value=100,
-    step=5
-)
-
-frequency = st.sidebar.slider(
-    "Frequency (Hz)",
-    min_value=0.1,
-    max_value=5.0,
-    value=1.0,
-    step=0.1
-)
-
-animation_speed = st.sidebar.slider(
-    "Animation Speed",
-    min_value=0.1,
-    max_value=3.0,
-    value=1.0,
-    step=0.1
-)
-
-# --------------------------------------------------
-# Fixed Wave Properties
-# --------------------------------------------------
-
-wavelength = 400
-
-# --------------------------------------------------
-# Calculate Physics
-# --------------------------------------------------
-
-wave_speed = frequency * wavelength
-
-period = 1 / frequency
 
 # --------------------------------------------------
 # HTML / JavaScript / Plotly
 # --------------------------------------------------
 
-html_code = f"""
+html_code = """
 <!DOCTYPE html>
 
 <html>
@@ -81,71 +33,244 @@ html_code = f"""
 
 <style>
 
-body {{
+body {
     margin: 0;
     background-color: #141923;
+    color: #eeeeee;
     font-family: Arial, sans-serif;
-}}
+}
 
-#plot {{
-    width: 100%;
-    height: 550px;
-}}
+/* -----------------------------------------------
+   Controls
+------------------------------------------------ */
 
-.controls {{
+.control-panel {
+    background-color: #1d2330;
+    padding: 15px 20px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.control-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 12px;
+}
+
+.control-row:last-child {
+    margin-bottom: 0;
+}
+
+label {
+    width: 170px;
+    font-size: 16px;
+}
+
+input[type="range"] {
+    flex: 1;
+    cursor: pointer;
+}
+
+.value {
+    width: 80px;
+    text-align: right;
+    font-weight: bold;
+}
+
+/* -----------------------------------------------
+   Buttons
+------------------------------------------------ */
+
+.buttons {
     text-align: center;
     margin-top: 5px;
-}}
+}
 
-button {{
+button {
     font-size: 16px;
     padding: 8px 18px;
     margin: 4px;
     border-radius: 6px;
     border: none;
     cursor: pointer;
-}}
+}
+
+/* -----------------------------------------------
+   Plot
+------------------------------------------------ */
+
+#plot {
+    width: 100%;
+    height: 550px;
+}
 
 </style>
 
 </head>
 
+
 <body>
+
+
+<!-- ==================================================
+     CONTROL PANEL
+================================================== -->
+
+<div class="control-panel">
+
+
+    <!-- AMPLITUDE -->
+
+    <div class="control-row">
+
+        <label>
+            Amplitude
+        </label>
+
+        <input
+            id="amplitudeSlider"
+            type="range"
+            min="20"
+            max="200"
+            value="100"
+            step="1"
+        >
+
+        <div
+            class="value"
+            id="amplitudeValue"
+        >
+            100 px
+        </div>
+
+    </div>
+
+
+    <!-- FREQUENCY -->
+
+    <div class="control-row">
+
+        <label>
+            Frequency
+        </label>
+
+        <input
+            id="frequencySlider"
+            type="range"
+            min="0.1"
+            max="5"
+            value="1"
+            step="0.1"
+        >
+
+        <div
+            class="value"
+            id="frequencyValue"
+        >
+            1.0 Hz
+        </div>
+
+    </div>
+
+
+    <!-- ANIMATION SPEED -->
+
+    <div class="control-row">
+
+        <label>
+            Animation Speed
+        </label>
+
+        <input
+            id="speedSlider"
+            type="range"
+            min="0.1"
+            max="3"
+            value="1"
+            step="0.1"
+        >
+
+        <div
+            class="value"
+            id="speedValue"
+        >
+            1.0×
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ==================================================
+     PLOT
+================================================== -->
 
 <div id="plot"></div>
 
-<div class="controls">
 
-<button onclick="playWave()">▶ Play</button>
+<!-- ==================================================
+     BUTTONS
+================================================== -->
 
-<button onclick="pauseWave()">⏸ Pause</button>
+<div class="buttons">
 
-<button onclick="resetWave()">↺ Reset</button>
+    <button onclick="playWave()">
+        ▶ Play
+    </button>
+
+    <button onclick="pauseWave()">
+        ⏸ Pause
+    </button>
+
+    <button onclick="resetWave()">
+        ↺ Reset
+    </button>
 
 </div>
+
 
 <script>
 
 // ==================================================
-// WAVE PARAMETERS
+// INITIAL PARAMETERS
 // ==================================================
 
-const amplitude = {amplitude};
+let amplitude = 100;
 
-const frequency = {frequency};
+let frequency = 1.0;
 
-const wavelength = {wavelength};
+let animationSpeed = 1.0;
 
-
-// ==================================================
-// ANIMATION SPEED
-// ==================================================
-
-const animationSpeed = {animation_speed};
+const wavelength = 400;
 
 
 // ==================================================
-// X AXIS
+// FIXED Y-AXIS RANGE
+// ==================================================
+//
+// IMPORTANT:
+//
+// This does NOT change when amplitude changes.
+//
+// Therefore:
+//
+// A = 50  -> small wave
+//
+// A = 100 -> medium wave
+//
+// A = 200 -> large wave
+//
+// ==================================================
+
+const yAxisMin = -220;
+
+const yAxisMax = 220;
+
+
+// ==================================================
+// X VALUES
 // ==================================================
 
 const numberOfPoints = 600;
@@ -156,87 +281,30 @@ const xMax = 1200;
 
 const x = [];
 
-for (let i = 0; i < numberOfPoints; i++) {{
+for (
+    let i = 0;
+    i < numberOfPoints;
+    i++
+) {
 
     x.push(
         xMin +
         (xMax - xMin) *
-        i / (numberOfPoints - 1)
+        i /
+        (numberOfPoints - 1)
     );
 
-}}
+}
 
 
 // ==================================================
-// INITIAL WAVE
+// PARTICLE POSITIONS
 // ==================================================
-
-const initialY = [];
-
-for (let i = 0; i < x.length; i++) {{
-
-    initialY.push(
-
-        amplitude *
-        Math.sin(
-            2 * Math.PI * x[i] / wavelength
-        )
-
-    );
-
-}}
-
-
-// ==================================================
-// WAVE TRACE
-// ==================================================
-
-const waveTrace = {{
-
-    x: x,
-
-    y: initialY,
-
-    mode: "lines",
-
-    line: {{
-        width: 4
-    }},
-
-    name: "Wave"
-
-}};
-
-
-// ==================================================
-// EQUILIBRIUM LINE
-// ==================================================
-
-const equilibriumTrace = {{
-
-    x: [xMin, xMax],
-
-    y: [0, 0],
-
-    mode: "lines",
-
-    line: {{
-        width: 2,
-        dash: "dash"
-    }},
-
-    name: "Equilibrium"
-
-}};
-
-
-// ==================================================
-// PARTICLES
-// ==================================================
-
-// IMPORTANT:
-// The x positions NEVER change.
-// Only the y positions change.
+//
+// These NEVER change horizontally.
+//
+// They only move vertically.
+//
 
 const particlePositions = [
 
@@ -255,108 +323,242 @@ const particlePositions = [
 ];
 
 
-const initialParticleY = [];
+// ==================================================
+// CREATE INITIAL WAVE
+// ==================================================
 
-for (
-    let i = 0;
-    i < particlePositions.length;
-    i++
-) {{
+function calculateWave(t) {
 
-    initialParticleY.push(
+    const y = [];
 
-        amplitude *
-        Math.sin(
+    const phase =
+        2 *
+        Math.PI *
+        frequency *
+        t;
 
-            2 *
-            Math.PI *
-            particlePositions[i] /
-            wavelength
+    for (
+        let i = 0;
+        i < x.length;
+        i++
+    ) {
 
-        )
+        y.push(
 
-    );
+            amplitude *
+            Math.sin(
 
-}}
+                2 *
+                Math.PI *
+                x[i] /
+                wavelength
+                -
+                phase
+
+            )
+
+        );
+
+    }
+
+    return y;
+
+}
 
 
-const particleTrace = {{
+// ==================================================
+// CREATE PARTICLE POSITIONS
+// ==================================================
+
+function calculateParticles(t) {
+
+    const y = [];
+
+    const phase =
+        2 *
+        Math.PI *
+        frequency *
+        t;
+
+    for (
+        let i = 0;
+        i < particlePositions.length;
+        i++
+    ) {
+
+        y.push(
+
+            amplitude *
+            Math.sin(
+
+                2 *
+                Math.PI *
+                particlePositions[i] /
+                wavelength
+                -
+                phase
+
+            )
+
+        );
+
+    }
+
+    return y;
+
+}
+
+
+// ==================================================
+// INITIAL DATA
+// ==================================================
+
+const initialWave =
+    calculateWave(0);
+
+const initialParticles =
+    calculateParticles(0);
+
+
+// ==================================================
+// WAVE TRACE
+// ==================================================
+
+const waveTrace = {
+
+    x: x,
+
+    y: initialWave,
+
+    mode: "lines",
+
+    line: {
+        width: 4
+    },
+
+    name: "Wave"
+
+};
+
+
+// ==================================================
+// EQUILIBRIUM LINE
+// ==================================================
+
+const equilibriumTrace = {
+
+    x: [xMin, xMax],
+
+    y: [0, 0],
+
+    mode: "lines",
+
+    line: {
+        width: 2,
+        dash: "dash"
+    },
+
+    name: "Equilibrium"
+
+};
+
+
+// ==================================================
+// PARTICLE TRACE
+// ==================================================
+
+const particleTrace = {
 
     x: particlePositions,
 
-    y: initialParticleY,
+    y: initialParticles,
 
     mode: "markers",
 
-    marker: {{
+    marker: {
         size: 10
-    }},
+    },
 
     name: "Particles"
 
-}};
+};
 
 
 // ==================================================
 // PLOT LAYOUT
 // ==================================================
 
-const layout = {{
+const layout = {
 
-    title: {{
+    title: {
+
         text: "Transverse Sinusoidal Wave",
-        font: {{
+
+        font: {
             size: 22
-        }}
-    }},
+        }
+
+    },
 
     paper_bgcolor: "#141923",
 
     plot_bgcolor: "#141923",
 
-    font: {{
+    font: {
         color: "#eeeeee"
-    }},
+    },
 
-    xaxis: {{
+    xaxis: {
 
         title: "Position",
 
-        range: [0, 1200],
-
-        gridcolor: "#39404d",
-
-        zeroline: false
-
-    }},
-
-    yaxis: {{
-
-        title: "Displacement",
-
         range: [
-            -amplitude * 1.3,
-            amplitude * 1.3
+            xMin,
+            xMax
         ],
 
         gridcolor: "#39404d",
 
         zeroline: false
 
-    }},
+    },
 
-    margin: {{
+    yaxis: {
+
+        title: "Displacement",
+
+        // ------------------------------------------
+        // FIXED RANGE
+        // ------------------------------------------
+
+        range: [
+            yAxisMin,
+            yAxisMax
+        ],
+
+        fixedrange: true,
+
+        gridcolor: "#39404d",
+
+        zeroline: false
+
+    },
+
+    margin: {
 
         l: 70,
+
         r: 30,
+
         t: 70,
+
         b: 60
 
-    }},
+    },
 
     showlegend: true
 
-}};
+};
 
 
 // ==================================================
@@ -375,9 +577,9 @@ Plotly.newPlot(
 
     layout,
 
-    {{
+    {
         responsive: true
-    }}
+    }
 
 );
 
@@ -388,7 +590,7 @@ Plotly.newPlot(
 
 let animationID = null;
 
-let startTime = null;
+let lastTimestamp = null;
 
 let elapsedTime = 0;
 
@@ -396,270 +598,175 @@ let isPlaying = true;
 
 
 // ==================================================
-// ANIMATION FUNCTION
+// ANIMATION LOOP
 // ==================================================
 
-function animateWave(timestamp) {{
+function animateWave(timestamp) {
 
-    if (!isPlaying) {{
+    if (!isPlaying) {
+
         return;
-    }}
+
+    }
 
 
-    // Start timing
+    if (lastTimestamp === null) {
 
-    if (startTime === null) {{
+        lastTimestamp = timestamp;
 
-        startTime =
-            timestamp -
-            elapsedTime * 1000;
-
-    }}
-
-
-    // Real elapsed time
-
-    const realElapsed =
-        (timestamp - startTime) / 1000;
+    }
 
 
     // ----------------------------------------------
-    // Apply animation speed
+    // Calculate elapsed real time
     // ----------------------------------------------
 
-    const t =
-        realElapsed *
+    const deltaTime =
+        (timestamp - lastTimestamp) /
+        1000;
+
+
+    lastTimestamp = timestamp;
+
+
+    // ----------------------------------------------
+    // Apply animation-speed multiplier
+    // ----------------------------------------------
+
+    elapsedTime +=
+        deltaTime *
         animationSpeed;
 
 
     // ----------------------------------------------
-    // Calculate phase
+    // Calculate new wave
     // ----------------------------------------------
 
-    const phase =
-        2 *
-        Math.PI *
-        frequency *
-        t;
+    const newWave =
+        calculateWave(elapsedTime);
 
 
-    // ==================================================
-    // CALCULATE WAVE
-    // ==================================================
-
-    const newY = [];
-
-    for (let i = 0; i < x.length; i++) {{
-
-        newY.push(
-
-            amplitude *
-            Math.sin(
-
-                2 *
-                Math.PI *
-                x[i] /
-                wavelength
-                -
-                phase
-
-            )
-
-        );
-
-    }}
+    const newParticles =
+        calculateParticles(elapsedTime);
 
 
-    // ==================================================
-    // CALCULATE PARTICLE MOTION
-    // ==================================================
-
-    const newParticleY = [];
-
-    for (
-        let i = 0;
-        i < particlePositions.length;
-        i++
-    ) {{
-
-        // x NEVER changes.
-        //
-        // Only y changes.
-
-        newParticleY.push(
-
-            amplitude *
-            Math.sin(
-
-                2 *
-                Math.PI *
-                particlePositions[i] /
-                wavelength
-                -
-                phase
-
-            )
-
-        );
-
-    }}
-
-
-    // ==================================================
-    // UPDATE WAVE
-    // ==================================================
+    // ----------------------------------------------
+    // Update wave
+    // ----------------------------------------------
 
     Plotly.restyle(
 
         "plot",
 
-        {{
-            y: [newY]
-        }},
+        {
+            y: [newWave]
+        },
 
         [0]
 
     );
 
 
-    // ==================================================
-    // UPDATE PARTICLES
-    // ==================================================
+    // ----------------------------------------------
+    // Update particles
+    // ----------------------------------------------
 
     Plotly.restyle(
 
         "plot",
 
-        {{
-            y: [newParticleY]
-        }},
+        {
+            y: [newParticles]
+        },
 
         [2]
 
     );
 
 
-    // ==================================================
-    // CONTINUE ANIMATION FOREVER
-    // ==================================================
-
-    elapsedTime = t;
+    // ----------------------------------------------
+    // Continue forever
+    // ----------------------------------------------
 
     animationID =
-        requestAnimationFrame(animateWave);
+        requestAnimationFrame(
+            animateWave
+        );
 
-}}
+}
 
 
 // ==================================================
 // PLAY
 // ==================================================
 
-function playWave() {{
+function playWave() {
 
-    if (isPlaying) {{
+    if (isPlaying) {
+
         return;
-    }}
+
+    }
 
     isPlaying = true;
 
-    startTime = null;
+    lastTimestamp = null;
 
     animationID =
-        requestAnimationFrame(animateWave);
+        requestAnimationFrame(
+            animateWave
+        );
 
-}}
+}
 
 
 // ==================================================
 // PAUSE
 // ==================================================
 
-function pauseWave() {{
+function pauseWave() {
 
-    if (!isPlaying) {{
+    if (!isPlaying) {
+
         return;
-    }}
+
+    }
 
     isPlaying = false;
 
-    cancelAnimationFrame(animationID);
+    cancelAnimationFrame(
+        animationID
+    );
 
-}}
+}
 
 
 // ==================================================
 // RESET
 // ==================================================
 
-function resetWave() {{
-
-    cancelAnimationFrame(animationID);
+function resetWave() {
 
     elapsedTime = 0;
 
-    startTime = null;
-
-    isPlaying = true;
+    lastTimestamp = null;
 
 
-    // Reset wave
-
-    const resetY = [];
-
-    for (let i = 0; i < x.length; i++) {{
-
-        resetY.push(
-
-            amplitude *
-            Math.sin(
-
-                2 *
-                Math.PI *
-                x[i] /
-                wavelength
-
-            )
-
-        );
-
-    }}
+    const resetWave =
+        calculateWave(0);
 
 
-    // Reset particles
-
-    const resetParticleY = [];
-
-    for (
-        let i = 0;
-        i < particlePositions.length;
-        i++
-    ) {{
-
-        resetParticleY.push(
-
-            amplitude *
-            Math.sin(
-
-                2 *
-                Math.PI *
-                particlePositions[i] /
-                wavelength
-
-            )
-
-        );
-
-    }}
+    const resetParticles =
+        calculateParticles(0);
 
 
     Plotly.restyle(
 
         "plot",
 
-        {{
-            y: [resetY]
-        }},
+        {
+            y: [resetWave]
+        },
 
         [0]
 
@@ -670,19 +777,171 @@ function resetWave() {{
 
         "plot",
 
-        {{
-            y: [resetParticleY]
-        }},
+        {
+            y: [resetParticles]
+        },
 
         [2]
 
     );
 
+}
 
-    animationID =
-        requestAnimationFrame(animateWave);
 
-}}
+// ==================================================
+// AMPLITUDE SLIDER
+// ==================================================
+
+const amplitudeSlider =
+    document.getElementById(
+        "amplitudeSlider"
+    );
+
+const amplitudeValue =
+    document.getElementById(
+        "amplitudeValue"
+    );
+
+
+amplitudeSlider.addEventListener(
+    "input",
+    function() {
+
+        // ------------------------------------------
+        // Update amplitude IMMEDIATELY
+        // ------------------------------------------
+
+        amplitude =
+            parseFloat(
+                this.value
+            );
+
+
+        amplitudeValue.textContent =
+            amplitude.toFixed(0)
+            + " px";
+
+
+        // ------------------------------------------
+        // Immediately redraw wave
+        // ------------------------------------------
+
+        const newWave =
+            calculateWave(
+                elapsedTime
+            );
+
+
+        const newParticles =
+            calculateParticles(
+                elapsedTime
+            );
+
+
+        Plotly.restyle(
+
+            "plot",
+
+            {
+                y: [newWave]
+            },
+
+            [0]
+
+        );
+
+
+        Plotly.restyle(
+
+            "plot",
+
+            {
+                y: [newParticles]
+            },
+
+            [2]
+
+        );
+
+    }
+
+);
+
+
+// ==================================================
+// FREQUENCY SLIDER
+// ==================================================
+
+const frequencySlider =
+    document.getElementById(
+        "frequencySlider"
+    );
+
+const frequencyValue =
+    document.getElementById(
+        "frequencyValue"
+    );
+
+
+frequencySlider.addEventListener(
+    "input",
+    function() {
+
+        // ------------------------------------------
+        // Update frequency IMMEDIATELY
+        // ------------------------------------------
+
+        frequency =
+            parseFloat(
+                this.value
+            );
+
+
+        frequencyValue.textContent =
+            frequency.toFixed(1)
+            + " Hz";
+
+    }
+
+);
+
+
+// ==================================================
+// ANIMATION SPEED SLIDER
+// ==================================================
+
+const speedSlider =
+    document.getElementById(
+        "speedSlider"
+    );
+
+const speedValue =
+    document.getElementById(
+        "speedValue"
+    );
+
+
+speedSlider.addEventListener(
+    "input",
+    function() {
+
+        // ------------------------------------------
+        // Update animation speed IMMEDIATELY
+        // ------------------------------------------
+
+        animationSpeed =
+            parseFloat(
+                this.value
+            );
+
+
+        speedValue.textContent =
+            animationSpeed.toFixed(1)
+            + "×";
+
+    }
+
+);
 
 
 // ==================================================
@@ -690,7 +949,9 @@ function resetWave() {{
 // ==================================================
 
 animationID =
-    requestAnimationFrame(animateWave);
+    requestAnimationFrame(
+        animateWave
+    );
 
 </script>
 
@@ -700,97 +961,11 @@ animationID =
 """
 
 # --------------------------------------------------
-# Display Animation
+# Display Application
 # --------------------------------------------------
 
 components.html(
     html_code,
-    height=650,
+    height=750,
     scrolling=False
-)
-
-# --------------------------------------------------
-# Wave Properties
-# --------------------------------------------------
-
-st.subheader("Wave Properties")
-
-col1, col2, col3, col4 = st.columns(4)
-
-with col1:
-    st.metric(
-        "Amplitude",
-        f"{amplitude} px"
-    )
-
-with col2:
-    st.metric(
-        "Frequency",
-        f"{frequency:.1f} Hz"
-    )
-
-with col3:
-    st.metric(
-        "Wavelength",
-        f"{wavelength} px"
-    )
-
-with col4:
-    st.metric(
-        "Wave Speed",
-        f"{wave_speed:.1f} px/s"
-    )
-
-# --------------------------------------------------
-# Additional Properties
-# --------------------------------------------------
-
-col1, col2 = st.columns(2)
-
-with col1:
-
-    st.write("### Period")
-
-    st.latex(
-        r"T = \frac{1}{f}"
-    )
-
-    st.write(
-        f"T = {period:.2f} seconds"
-    )
-
-with col2:
-
-    st.write("### Wave Speed")
-
-    st.latex(
-        r"v = f\lambda"
-    )
-
-    st.write(
-        f"v = {wave_speed:.1f} px/s"
-    )
-
-# --------------------------------------------------
-# Wave Equation
-# --------------------------------------------------
-
-st.subheader("Wave Equation")
-
-st.latex(
-    r"""
-    y(x,t)
-    =
-    A\sin
-    \left(
-    \frac{2\pi x}{\lambda}
-    -
-    2\pi ft
-    \right)
-    """
-)
-
-st.info(
-    "The particles oscillate vertically. "
-    "Their horizontal positions remain fixed."
 )
