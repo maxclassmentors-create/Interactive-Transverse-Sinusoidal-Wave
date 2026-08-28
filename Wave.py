@@ -1625,6 +1625,6 @@ animationID =
 
 components.html(
     html_code,
-    height=1050,
+    height=1300,
     scrolling=False
 )
