@@ -19,7 +19,7 @@ st.write(
 )
 
 # --------------------------------------------------
-# Plotly + JavaScript Application
+# HTML / JavaScript / Plotly
 # --------------------------------------------------
 
 html_code = """
@@ -284,17 +284,17 @@ button {
         <input
             id="amplitudeSlider"
             type="range"
-            min="20"
-            max="200"
-            value="100"
-            step="1"
+            min="0.1"
+            max="2.0"
+            value="1.0"
+            step="0.01"
         >
 
         <div
             class="value"
             id="amplitudeValue"
         >
-            100 px
+            1.00 m
         </div>
 
     </div>
@@ -311,9 +311,9 @@ button {
         <input
             id="frequencySlider"
             type="range"
-            min="0.1"
-            max="5"
-            value="1"
+            min="0.5"
+            max="4.0"
+            value="1.0"
             step="0.1"
         >
 
@@ -338,17 +338,17 @@ button {
         <input
             id="wavelengthSlider"
             type="range"
-            min="100"
-            max="800"
-            value="400"
-            step="5"
+            min="1"
+            max="8"
+            value="4"
+            step="0.05"
         >
 
         <div
             class="value"
             id="wavelengthValue"
         >
-            400 px
+            4.00 m
         </div>
 
     </div>
@@ -445,7 +445,7 @@ button {
         Wave Speed:
 
         <span id="liveSpeed">
-            400 px/s
+            4.00 m/s
         </span>
 
         &nbsp;&nbsp;|&nbsp;&nbsp;
@@ -461,7 +461,7 @@ button {
         Wavelength:
 
         <span id="liveWavelength">
-            400 px
+            4.00 m
         </span>
 
     </div>
@@ -500,14 +500,14 @@ button {
 <script>
 
 // ==================================================
-// PARAMETERS
+// PHYSICAL PARAMETERS
 // ==================================================
 
-let amplitude = 100;
+let amplitude = 1.0;
 
 let frequency = 1.0;
 
-let wavelength = 400;
+let wavelength = 4.0;
 
 let animationSpeed = 1.0;
 
@@ -515,38 +515,49 @@ let animationSpeed = 1.0;
 // ==================================================
 // CONSTANT WAVE SPEED
 // ==================================================
-
-let constantWaveSpeed = true;
-
-// Initial speed:
 //
 // v = f × λ
 //
-// v = 1 × 400
+// Initial:
 //
-// v = 400 px/s
+// v = 1.0 Hz × 4.0 m
+//
+// v = 4.0 m/s
+//
+// ==================================================
 
-const fixedWaveSpeed = 400;
+let constantWaveSpeed = true;
+
+const fixedWaveSpeed = 4.0;
 
 
 // ==================================================
 // FIXED Y-AXIS
 // ==================================================
+//
+// The y-axis stays fixed so that amplitude changes
+// are visually obvious.
+//
+// ==================================================
 
-const yAxisMin = -220;
+const yAxisMin = -2.2;
 
-const yAxisMax = 220;
+const yAxisMax = 2.2;
 
 
 // ==================================================
-// X VALUES
+// X AXIS
+// ==================================================
+//
+// Position is now measured in METERS.
+//
 // ==================================================
 
 const numberOfPoints = 600;
 
 const xMin = 0;
 
-const xMax = 1200;
+const xMax = 12;
 
 const x = [];
 
@@ -572,22 +583,22 @@ for (
 
 
 // ==================================================
-// PARTICLES
+// PARTICLE POSITIONS
 // ==================================================
 
 const particlePositions = [
 
-    100,
-    200,
-    300,
-    400,
-    500,
-    600,
-    700,
-    800,
-    900,
-    1000,
-    1100
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
 
 ];
 
@@ -701,7 +712,7 @@ function calculateParticles(t) {
 
 
 // ==================================================
-// INITIAL VALUES
+// INITIAL DATA
 // ==================================================
 
 const initialWave =
@@ -733,7 +744,7 @@ const waveTrace = {
 
 
 // ==================================================
-// EQUILIBRIUM
+// EQUILIBRIUM LINE
 // ==================================================
 
 const equilibriumTrace = {
@@ -755,7 +766,7 @@ const equilibriumTrace = {
 
 
 // ==================================================
-// PARTICLES
+// PARTICLE TRACE
 // ==================================================
 
 const particleTrace = {
@@ -776,7 +787,7 @@ const particleTrace = {
 
 
 // ==================================================
-// LAYOUT
+// PLOT LAYOUT
 // ==================================================
 
 const layout = {
@@ -801,7 +812,7 @@ const layout = {
 
     xaxis: {
 
-        title: "Position",
+        title: "Position (m)",
 
         range: [
             xMin,
@@ -816,10 +827,11 @@ const layout = {
 
     yaxis: {
 
-        title: "Displacement",
+        title: "Displacement (m)",
 
-        // IMPORTANT:
-        // Fixed so amplitude changes are visible.
+        // ------------------------------------------
+        // FIXED RANGE
+        // ------------------------------------------
 
         range: [
             yAxisMin,
@@ -836,7 +848,7 @@ const layout = {
 
     margin: {
 
-        l: 70,
+        l: 80,
 
         r: 30,
 
@@ -894,7 +906,9 @@ let isPlaying = true;
 function updateLiveValues() {
 
     const speed =
+
         frequency *
+
         wavelength;
 
 
@@ -902,8 +916,8 @@ function updateLiveValues() {
         "liveSpeed"
     ).textContent =
 
-        speed.toFixed(1)
-        + " px/s";
+        speed.toFixed(2)
+        + " m/s";
 
 
     document.getElementById(
@@ -918,8 +932,8 @@ function updateLiveValues() {
         "liveWavelength"
     ).textContent =
 
-        wavelength.toFixed(0)
-        + " px";
+        wavelength.toFixed(2)
+        + " m";
 
 }
 
@@ -998,6 +1012,10 @@ function animateWave(timestamp) {
 
     lastTimestamp = timestamp;
 
+
+    // ----------------------------------------------
+    // Animation speed controls visualization speed
+    // ----------------------------------------------
 
     elapsedTime +=
 
@@ -1101,8 +1119,8 @@ amplitudeSlider.addEventListener(
             "amplitudeValue"
         ).textContent =
 
-            amplitude.toFixed(0)
-            + " px";
+            amplitude.toFixed(2)
+            + " m";
 
 
         updateWaveImmediately();
@@ -1134,7 +1152,15 @@ frequencySlider.addEventListener(
 
 
         // ------------------------------------------
-        // CONSTANT SPEED MODE
+        // CONSTANT SPEED
+        // ------------------------------------------
+        //
+        // v = f × λ
+        //
+        // Therefore:
+        //
+        // λ = v / f
+        //
         // ------------------------------------------
 
         if (constantWaveSpeed) {
@@ -1142,21 +1168,21 @@ frequencySlider.addEventListener(
             wavelength =
 
                 fixedWaveSpeed /
+
                 frequency;
 
 
-            // Keep wavelength inside slider range
+            // Keep wavelength within
+            // the slider range
 
             wavelength = Math.max(
-                100,
+                1,
                 Math.min(
-                    800,
+                    8,
                     wavelength
                 )
             );
 
-
-            // Update wavelength slider
 
             wavelengthSlider.value =
                 wavelength;
@@ -1176,8 +1202,8 @@ frequencySlider.addEventListener(
             "wavelengthValue"
         ).textContent =
 
-            wavelength.toFixed(0)
-            + " px";
+            wavelength.toFixed(2)
+            + " m";
 
 
         updateWaveImmediately();
@@ -1209,7 +1235,15 @@ wavelengthSlider.addEventListener(
 
 
         // ------------------------------------------
-        // CONSTANT SPEED MODE
+        // CONSTANT SPEED
+        // ------------------------------------------
+        //
+        // v = f × λ
+        //
+        // Therefore:
+        //
+        // f = v / λ
+        //
         // ------------------------------------------
 
         if (constantWaveSpeed) {
@@ -1217,21 +1251,21 @@ wavelengthSlider.addEventListener(
             frequency =
 
                 fixedWaveSpeed /
+
                 wavelength;
 
 
-            // Keep frequency inside slider range
+            // Keep frequency within
+            // the slider range
 
             frequency = Math.max(
-                0.1,
+                0.5,
                 Math.min(
-                    5,
+                    4,
                     frequency
                 )
             );
 
-
-            // Update frequency slider
 
             frequencySlider.value =
                 frequency;
@@ -1243,8 +1277,8 @@ wavelengthSlider.addEventListener(
             "wavelengthValue"
         ).textContent =
 
-            wavelength.toFixed(0)
-            + " px";
+            wavelength.toFixed(2)
+            + " m";
 
 
         document.getElementById(
@@ -1318,19 +1352,21 @@ constantSpeedCheckbox.addEventListener(
 
         if (constantWaveSpeed) {
 
-            // Recalculate wavelength
-            // from the current frequency
+            // --------------------------------------
+            // Recalculate wavelength from frequency
+            // --------------------------------------
 
             wavelength =
 
                 fixedWaveSpeed /
+
                 frequency;
 
 
             wavelength = Math.max(
-                100,
+                1,
                 Math.min(
-                    800,
+                    8,
                     wavelength
                 )
             );
@@ -1344,8 +1380,8 @@ constantSpeedCheckbox.addEventListener(
                 "wavelengthValue"
             ).textContent =
 
-                wavelength.toFixed(0)
-                + " px";
+                wavelength.toFixed(2)
+                + " m";
 
 
             updateWaveImmediately();
